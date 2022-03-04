@@ -140,13 +140,24 @@ defmodule HT16K33 do
   	- pos: on which 14-segment display to render the character, [0, 3]
   	- code: bitstream code to output
   """
-  @spec write_char_to(backpack_state, non_neg_integer, bitstring) :: backpack_state
-  def write_char_to(state, pos, code) when 0 < pos and pos < 4 do
-    I2C.write(state[:ref], state[:addr], <<0x00>> <> code)
+  @spec write_char_to(backpack_state, 0..3, bitstring) :: backpack_state
+  def write_char_to(state, pos, code) when 0 <= pos and pos < 4 do
+    I2C.write(state[:ref], state[:addr], <<pos * 2>> <> code)
     state
   end
 
   def write_char_to(state, _pos, _code), do: state
+
+  @spec write_string_to(backpack_state, 0..3, list(char)) :: backpack_state
+  def write_string_to(state, pos, str) when length(str) + pos <= 4 and 0 <= pos do
+    I2C.write(
+      state[:ref],
+      state[:addr],
+      <<pos * 2>> <> List.foldl(str, <<>>, fn x, acc -> acc <> character_for(x) end)
+    )
+
+    state
+  end
 
   @doc """
   Add a decimal point to a character bitstream value
